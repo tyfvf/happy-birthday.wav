@@ -39,17 +39,19 @@ typedef struct {
 #define BITS_PER_SAMPLE 16
 
 int main(void) {
-  Note happy_birthday[] = {
+  const Note happy_birthday[] = {
     {392.00f, 0.5f}, {392.00f, 0.5f}, {440.00f, 1.0f}, {392.00f, 1.0f}, {523.25f, 1.0f}, {493.88f, 2.0f},
     {392.00f, 0.5f}, {392.00f, 0.5f}, {440.00f, 1.0f}, {392.00f, 1.0f}, {587.33f, 1.0f}, {523.25f, 2.0f},
     {392.00f, 0.5f}, {392.00f, 0.5f}, {783.99f, 1.0f}, {659.25f, 1.0f}, {523.25f, 1.0f}, {493.88f, 1.0f}, {440.00f, 2.0f},
     {698.46f, 0.5f}, {698.46f, 0.5f}, {659.25f, 1.0f}, {523.25f, 1.0f}, {587.33f, 1.0f}, {523.25f, 2.0f}
   };
 
+  size_t song_len = sizeof(happy_birthday)/sizeof(happy_birthday[0]);
+
   FILE *file = fopen("output.wav", "wb");
   
   u32 total_samples = 0;
-  for (u32 i = 0; i < sizeof(happy_birthday)/sizeof(happy_birthday[0]); i++) {
+  for (u32 i = 0; i < song_len; i++) {
     total_samples += (u32)(happy_birthday[i].duration * FREQ);
   }
 
@@ -74,16 +76,19 @@ int main(void) {
   write_u32_le(data_size, file); // Subchunk2Size
   
   // Write audio data
-  for (u32 i = 0; i < sizeof(happy_birthday)/sizeof(happy_birthday[0]); i++) {
+  f32 phase = 0.0f;
+
+  for (u32 i = 0; i < song_len; i++) {
     Note note = happy_birthday[i];
     u32 samples = (u32)(note.duration * FREQ);
+    f32 phase_increment = 2.0f * 3.14159265f * note.freq / FREQ;
 
     for (u32 j = 0; j < samples; j++) {
-      f32 t = (f32)j / FREQ;
-      f32 sample = 0.25f * sinf(2.0f * 3.14159265f * note.freq * t);
+      f32 sample = 0.25f * sinf(phase);
       i16 int_sample = (i16)(sample * INT16_MAX); // Scale to int16 range
 
       write_i16_le(int_sample, file);
+      phase += phase_increment;
     }
 
   }
